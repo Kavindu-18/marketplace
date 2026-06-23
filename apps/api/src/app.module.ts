@@ -7,6 +7,9 @@ import { AuthModule } from './auth/auth.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ProvidersModule } from './providers/providers.module';
 import { ServicesModule } from './services/services.module';
+import { VerificationModule } from './verification/verification.module';
+import { SearchModule } from './search/search.module';
+import { LeadsModule } from './leads/leads.module';
 
 @Module({
   imports: [
@@ -18,6 +21,9 @@ import { ServicesModule } from './services/services.module';
     CategoriesModule,
     ProvidersModule,
     ServicesModule,
+    VerificationModule,
+    SearchModule,
+    LeadsModule,
   ],
 })
 export class AppModule {}
