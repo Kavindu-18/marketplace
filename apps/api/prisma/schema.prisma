@@ -1,0 +1,190 @@
+// Marketplace — Phase 1 data model
+// Geo columns declared via Unsupported; GIST index added in raw SQL migration.
+// Phase 2 items (subscriptions, payments, bookings, ratings) are NOT here.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  CUSTOMER
+  PROVIDER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum ProviderStatus {
+  REGISTERED
+  PENDING_VERIFICATION
+  VERIFIED
+  REJECTED
+  SUSPENDED
+}
+
+enum DocumentType {
+  BUSINESS_REG
+  NIC
+  OTHER
+}
+
+enum DocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum Vertical {
+  CONSULTATION
+  VEHICLE_SERVICE
+}
+
+enum ServiceStatus {
+  DRAFT
+  PENDING_VERIFICATION
+  ACTIVE
+  REJECTED
+}
+
+enum AdminTargetType {
+  PROVIDER
+  SERVICE
+}
+
+enum AdminDecision {
+  APPROVED
+  REJECTED
+}
+
+enum ContactChannel {
+  PHONE
+  EMAIL
+}
+
+// ---------------------------------------------------------------------------
+// Models
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  passwordHash String
+  role         Role
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  refreshTokenHash    String?
+
+  providerProfile     ProviderProfile?
+  adminReviews        AdminReview[]
+  contactRevealEvents ContactRevealEvent[]
+}
+
+model ProviderProfile {
+  id           String         @id @default(uuid())
+  userId       String         @unique
+  businessName String
+  description  String
+  contactPhone String
+  contactEmail String
+  addressLine  String
+  city         String
+  district     String
+  // Geo column — queried via ST_DWithin / ST_Distance raw SQL only. Never app-layer filtering.
+  location     Unsupported("geography(Point, 4326)")?
+  status       ProviderStatus @default(REGISTERED)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  user                  User                   @relation(fields: [userId], references: [id])
+  verificationDocuments VerificationDocument[]
+  services              Service[]
+  contactRevealEvents   ContactRevealEvent[]
+
+  @@index([status])
+  @@index([district])
+}
+
+model VerificationDocument {
+  id                String         @id @default(uuid())
+  providerProfileId String
+  type              DocumentType
+  fileUrl           String
+  status            DocumentStatus @default(PENDING)
+  reviewNotes       String?
+  createdAt         DateTime       @default(now())
+
+  providerProfile ProviderProfile @relation(fields: [providerProfileId], references: [id])
+}
+
+model ServiceCategory {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  vertical  Vertical
+  parentId  String?
+  createdAt DateTime @default(now())
+
+  parent   ServiceCategory?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children ServiceCategory[] @relation("CategoryTree")
+  services Service[]
+}
+
+model Service {
+  id                String        @id @default(uuid())
+  providerProfileId String
+  categoryId        String
+  title             String
+  description       String
+  priceInfo         String
+  status            ServiceStatus @default(DRAFT)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  providerProfile     ProviderProfile      @relation(fields: [providerProfileId], references: [id])
+  category            ServiceCategory      @relation(fields: [categoryId], references: [id])
+  contactRevealEvents ContactRevealEvent[]
+
+  @@index([status])
+  @@index([categoryId])
+}
+
+// Generic audit log of admin decisions on providers and services.
+model AdminReview {
+  id             String          @id @default(uuid())
+  targetType     AdminTargetType
+  targetId       String
+  reviewerUserId String
+  decision       AdminDecision
+  notes          String?
+  createdAt      DateTime        @default(now())
+
+  reviewer User @relation(fields: [reviewerUserId], references: [id])
+}
+
+// TODO: Phase 2 — bill on this event (pay-per-lead). For now it is a free audit trail.
+model ContactRevealEvent {
+  id                String         @id @default(uuid())
+  serviceId         String
+  providerProfileId String
+  customerUserId    String?
+  channel           ContactChannel
+  createdAt         DateTime       @default(now())
+
+  service         Service         @relation(fields: [serviceId], references: [id])
+  providerProfile ProviderProfile @relation(fields: [providerProfileId], references: [id])
+  customer        User?           @relation(fields: [customerUserId], references: [id])
+}
