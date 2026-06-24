@@ -108,9 +108,21 @@ export class SearchService {
 
     return {
       data: rows.map((r) => ({
-        ...r,
+        id: r.id,
+        title: r.title,
+        description: r.description,
+        priceInfo: r.priceInfo,
         distance_m: Math.round(r.distance_m),
         distance_km: Math.round((r.distance_m / 1000) * 100) / 100,
+        providerProfile: {
+          businessName: r.businessName,
+          city: r.city,
+          district: r.district,
+        },
+        category: {
+          id: r.categoryId,
+          name: r.categoryName,
+        },
       })),
       meta: {
         total,

@@ -21,6 +21,7 @@ import {
 import { Role } from '@prisma/client';
 import { ServicesService } from './services.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../common/guards/optional-jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -46,6 +47,16 @@ export class ServicesController {
   @ApiResponse({ status: 200, description: 'Provider\'s services with category info' })
   findAll(@CurrentUser() user: AuthenticatedUser) {
     return this.servicesService.findAllOwn(user.id);
+  }
+
+  @Get(':id/public')
+  @UseGuards(OptionalJwtAuthGuard)
+  @ApiOperation({ summary: 'Public: get an ACTIVE service by ID (no auth required)' })
+  @ApiParam({ name: 'id', description: 'Service UUID' })
+  @ApiResponse({ status: 200, description: 'Active service with category and provider info' })
+  @ApiResponse({ status: 404, description: 'Service not found or not active' })
+  findPublic(@Param('id') id: string) {
+    return this.servicesService.findPublic(id);
   }
 
   @Get(':id')

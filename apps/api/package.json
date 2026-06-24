@@ -10,7 +10,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",
-    "seed:admin": "ts-node src/seed/seed-admin.ts"
+    "seed:admin": "ts-node src/seed/seed-admin.ts",
+    "seed": "ts-node src/seed/seed.ts"
   },
   "dependencies": {
     "@marketplace/shared": "workspace:*",

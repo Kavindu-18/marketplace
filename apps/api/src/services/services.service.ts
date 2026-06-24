@@ -81,6 +81,18 @@ export class ServicesService {
     await this.prisma.service.delete({ where: { id } });
   }
 
+  async findPublic(id: string) {
+    const service = await this.prisma.service.findFirst({
+      where: { id, status: ServiceStatus.ACTIVE },
+      include: {
+        category: true,
+        providerProfile: { select: { businessName: true, city: true } },
+      },
+    });
+    if (!service) throw new NotFoundException('Service not found');
+    return service;
+  }
+
   async submit(id: string, userId: string) {
     const profile = await this.getProfileForUser(userId);
     if (profile.status !== ProviderStatus.VERIFIED) {
