@@ -1,3 +1,6 @@
+-- Enable PostGIS (required before any geography column can be created)
+CREATE EXTENSION IF NOT EXISTS postgis;
+
 -- CreateSchema
 CREATE SCHEMA IF NOT EXISTS "public";
 
